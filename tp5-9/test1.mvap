@@ -1,0 +1,6 @@
+PUSHI 0
+PUSHI 3
+
+STOREG 0
+HALT
+
