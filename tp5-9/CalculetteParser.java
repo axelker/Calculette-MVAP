@@ -20,8 +20,8 @@ public class CalculetteParser extends Parser {
 		new PredictionContextCache();
 	public static final int
 		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, T__6=7, T__7=8, T__8=9, 
-		T__9=10, T__10=11, T__11=12, TYPE=13, IDENTIFIANT=14, WS=15, ENTIER=16, 
-		FLOAT=17, NEWLINE=18, COMMENTARY=19, OPERATION=20, UNMATCH=21;
+		T__9=10, T__10=11, T__11=12, T__12=13, TYPE=14, IDENTIFIANT=15, WS=16, 
+		ENTIER=17, FLOAT=18, NEWLINE=19, COMMENTARY=20, OPERATION=21, UNMATCH=22;
 	public static final int
 		RULE_start = 0, RULE_calcul = 1, RULE_instruction = 2, RULE_expression = 3, 
 		RULE_finInstruction = 4, RULE_decl = 5, RULE_assignation = 6;
@@ -36,15 +36,15 @@ public class CalculetteParser extends Parser {
 	private static String[] makeLiteralNames() {
 		return new String[] {
 			null, "'read'", "'('", "')'", "'write'", "'/'", "'*'", "'+'", "'-'", 
-			"';'", "'var'", "':'", "'='"
+			"';'", "'var'", "':'", "'='", "'+='"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, "TYPE", "IDENTIFIANT", "WS", "ENTIER", "FLOAT", "NEWLINE", "COMMENTARY", 
-			"OPERATION", "UNMATCH"
+			null, null, "TYPE", "IDENTIFIANT", "WS", "ENTIER", "FLOAT", "NEWLINE", 
+			"COMMENTARY", "OPERATION", "UNMATCH"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -728,6 +728,7 @@ public class CalculetteParser extends Parser {
 	public static class AssignationContext extends ParserRuleContext {
 		public String code;
 		public Token IDENTIFIANT;
+		public Token op;
 		public ExpressionContext expression;
 		public TerminalNode IDENTIFIANT() { return getToken(CalculetteParser.IDENTIFIANT, 0); }
 		public ExpressionContext expression() {
@@ -750,19 +751,34 @@ public class CalculetteParser extends Parser {
 	public final AssignationContext assignation() throws RecognitionException {
 		AssignationContext _localctx = new AssignationContext(_ctx, getState());
 		enterRule(_localctx, 12, RULE_assignation);
+		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(121);
 			((AssignationContext)_localctx).IDENTIFIANT = match(IDENTIFIANT);
 			setState(122);
-			match(T__11);
+			((AssignationContext)_localctx).op = _input.LT(1);
+			_la = _input.LA(1);
+			if ( !(_la==T__11 || _la==T__12) ) {
+				((AssignationContext)_localctx).op = (Token)_errHandler.recoverInline(this);
+			}
+			else {
+				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+				_errHandler.reportMatch(this);
+				consume();
+			}
 			setState(123);
 			((AssignationContext)_localctx).expression = expression(0);
 			  
 			            AdresseType at = tablesSymboles.getAdresseType((((AssignationContext)_localctx).IDENTIFIANT!=null?((AssignationContext)_localctx).IDENTIFIANT.getText():null));
 			            int adresse = at.adresse;
-			            ((AssignationContext)_localctx).code =  ((AssignationContext)_localctx).expression.code + "STOREG " + adresse +"\n";
+			            if((((AssignationContext)_localctx).op!=null?((AssignationContext)_localctx).op.getText():null).equals("=")){    
+			                ((AssignationContext)_localctx).code =  ((AssignationContext)_localctx).expression.code + "STOREG " + adresse +"\n";
+			            }
+			            if((((AssignationContext)_localctx).op!=null?((AssignationContext)_localctx).op.getText():null).equals("+=")){
+			                ((AssignationContext)_localctx).code =  ((AssignationContext)_localctx).expression.code + "PUSHG " +adresse +"\n"+"ADD\n"+"STOREG " +adresse +"\n";
+			             }
 			        
 			}
 		}
@@ -795,7 +811,7 @@ public class CalculetteParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\27\u0081\4\2\t\2"+
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\30\u0081\4\2\t\2"+
 		"\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\3\2\3\2\3\2\3\3\3\3\3"+
 		"\3\7\3\27\n\3\f\3\16\3\32\13\3\3\3\7\3\35\n\3\f\3\16\3 \13\3\3\3\3\3\3"+
 		"\3\7\3%\n\3\f\3\16\3(\13\3\3\3\3\3\3\4\3\4\3\4\3\4\3\4\3\4\3\4\3\4\3\4"+
@@ -803,29 +819,30 @@ public class CalculetteParser extends Parser {
 		"\n\4\3\5\3\5\3\5\3\5\3\5\3\5\3\5\3\5\3\5\3\5\3\5\3\5\3\5\5\5T\n\5\3\5"+
 		"\3\5\3\5\3\5\3\5\3\5\3\5\3\5\3\5\3\5\7\5`\n\5\f\5\16\5c\13\5\3\6\6\6f"+
 		"\n\6\r\6\16\6g\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7"+
-		"\3\7\3\7\5\7z\n\7\3\b\3\b\3\b\3\b\3\b\3\b\2\3\b\t\2\4\6\b\n\f\16\2\5\3"+
-		"\2\7\b\3\2\t\n\4\2\13\13\24\24\2\u0087\2\20\3\2\2\2\4\30\3\2\2\2\6D\3"+
-		"\2\2\2\bS\3\2\2\2\ne\3\2\2\2\fy\3\2\2\2\16{\3\2\2\2\20\21\5\4\3\2\21\22"+
-		"\7\2\2\3\22\3\3\2\2\2\23\24\5\f\7\2\24\25\b\3\1\2\25\27\3\2\2\2\26\23"+
-		"\3\2\2\2\27\32\3\2\2\2\30\26\3\2\2\2\30\31\3\2\2\2\31\36\3\2\2\2\32\30"+
-		"\3\2\2\2\33\35\7\24\2\2\34\33\3\2\2\2\35 \3\2\2\2\36\34\3\2\2\2\36\37"+
-		"\3\2\2\2\37&\3\2\2\2 \36\3\2\2\2!\"\5\6\4\2\"#\b\3\1\2#%\3\2\2\2$!\3\2"+
-		"\2\2%(\3\2\2\2&$\3\2\2\2&\'\3\2\2\2\')\3\2\2\2(&\3\2\2\2)*\b\3\1\2*\5"+
-		"\3\2\2\2+,\5\b\5\2,-\5\n\6\2-.\b\4\1\2.E\3\2\2\2/\60\5\16\b\2\60\61\5"+
-		"\n\6\2\61\62\b\4\1\2\62E\3\2\2\2\63\64\7\3\2\2\64\65\7\4\2\2\65\66\7\20"+
-		"\2\2\66\67\7\5\2\2\678\5\n\6\289\b\4\1\29E\3\2\2\2:;\7\6\2\2;<\7\4\2\2"+
-		"<=\5\b\5\2=>\7\5\2\2>?\5\n\6\2?@\b\4\1\2@E\3\2\2\2AB\5\n\6\2BC\b\4\1\2"+
-		"CE\3\2\2\2D+\3\2\2\2D/\3\2\2\2D\63\3\2\2\2D:\3\2\2\2DA\3\2\2\2E\7\3\2"+
-		"\2\2FG\b\5\1\2GH\7\4\2\2HI\5\b\5\2IJ\7\5\2\2JK\b\5\1\2KT\3\2\2\2LM\7\22"+
-		"\2\2MT\b\5\1\2NO\7\n\2\2OP\7\22\2\2PT\b\5\1\2QR\7\20\2\2RT\b\5\1\2SF\3"+
-		"\2\2\2SL\3\2\2\2SN\3\2\2\2SQ\3\2\2\2Ta\3\2\2\2UV\f\7\2\2VW\t\2\2\2WX\5"+
-		"\b\5\bXY\b\5\1\2Y`\3\2\2\2Z[\f\6\2\2[\\\t\3\2\2\\]\5\b\5\7]^\b\5\1\2^"+
-		"`\3\2\2\2_U\3\2\2\2_Z\3\2\2\2`c\3\2\2\2a_\3\2\2\2ab\3\2\2\2b\t\3\2\2\2"+
-		"ca\3\2\2\2df\t\4\2\2ed\3\2\2\2fg\3\2\2\2ge\3\2\2\2gh\3\2\2\2h\13\3\2\2"+
-		"\2ij\7\f\2\2jk\7\20\2\2kl\7\r\2\2lm\7\17\2\2mn\5\n\6\2no\b\7\1\2oz\3\2"+
-		"\2\2pq\7\f\2\2qr\7\20\2\2rs\7\r\2\2st\7\17\2\2tu\7\16\2\2uv\5\b\5\2vw"+
-		"\5\n\6\2wx\b\7\1\2xz\3\2\2\2yi\3\2\2\2yp\3\2\2\2z\r\3\2\2\2{|\7\20\2\2"+
-		"|}\7\16\2\2}~\5\b\5\2~\177\b\b\1\2\177\17\3\2\2\2\13\30\36&DS_agy";
+		"\3\7\3\7\5\7z\n\7\3\b\3\b\3\b\3\b\3\b\3\b\2\3\b\t\2\4\6\b\n\f\16\2\6\3"+
+		"\2\7\b\3\2\t\n\4\2\13\13\25\25\3\2\16\17\2\u0087\2\20\3\2\2\2\4\30\3\2"+
+		"\2\2\6D\3\2\2\2\bS\3\2\2\2\ne\3\2\2\2\fy\3\2\2\2\16{\3\2\2\2\20\21\5\4"+
+		"\3\2\21\22\7\2\2\3\22\3\3\2\2\2\23\24\5\f\7\2\24\25\b\3\1\2\25\27\3\2"+
+		"\2\2\26\23\3\2\2\2\27\32\3\2\2\2\30\26\3\2\2\2\30\31\3\2\2\2\31\36\3\2"+
+		"\2\2\32\30\3\2\2\2\33\35\7\25\2\2\34\33\3\2\2\2\35 \3\2\2\2\36\34\3\2"+
+		"\2\2\36\37\3\2\2\2\37&\3\2\2\2 \36\3\2\2\2!\"\5\6\4\2\"#\b\3\1\2#%\3\2"+
+		"\2\2$!\3\2\2\2%(\3\2\2\2&$\3\2\2\2&\'\3\2\2\2\')\3\2\2\2(&\3\2\2\2)*\b"+
+		"\3\1\2*\5\3\2\2\2+,\5\b\5\2,-\5\n\6\2-.\b\4\1\2.E\3\2\2\2/\60\5\16\b\2"+
+		"\60\61\5\n\6\2\61\62\b\4\1\2\62E\3\2\2\2\63\64\7\3\2\2\64\65\7\4\2\2\65"+
+		"\66\7\21\2\2\66\67\7\5\2\2\678\5\n\6\289\b\4\1\29E\3\2\2\2:;\7\6\2\2;"+
+		"<\7\4\2\2<=\5\b\5\2=>\7\5\2\2>?\5\n\6\2?@\b\4\1\2@E\3\2\2\2AB\5\n\6\2"+
+		"BC\b\4\1\2CE\3\2\2\2D+\3\2\2\2D/\3\2\2\2D\63\3\2\2\2D:\3\2\2\2DA\3\2\2"+
+		"\2E\7\3\2\2\2FG\b\5\1\2GH\7\4\2\2HI\5\b\5\2IJ\7\5\2\2JK\b\5\1\2KT\3\2"+
+		"\2\2LM\7\23\2\2MT\b\5\1\2NO\7\n\2\2OP\7\23\2\2PT\b\5\1\2QR\7\21\2\2RT"+
+		"\b\5\1\2SF\3\2\2\2SL\3\2\2\2SN\3\2\2\2SQ\3\2\2\2Ta\3\2\2\2UV\f\7\2\2V"+
+		"W\t\2\2\2WX\5\b\5\bXY\b\5\1\2Y`\3\2\2\2Z[\f\6\2\2[\\\t\3\2\2\\]\5\b\5"+
+		"\7]^\b\5\1\2^`\3\2\2\2_U\3\2\2\2_Z\3\2\2\2`c\3\2\2\2a_\3\2\2\2ab\3\2\2"+
+		"\2b\t\3\2\2\2ca\3\2\2\2df\t\4\2\2ed\3\2\2\2fg\3\2\2\2ge\3\2\2\2gh\3\2"+
+		"\2\2h\13\3\2\2\2ij\7\f\2\2jk\7\21\2\2kl\7\r\2\2lm\7\20\2\2mn\5\n\6\2n"+
+		"o\b\7\1\2oz\3\2\2\2pq\7\f\2\2qr\7\21\2\2rs\7\r\2\2st\7\20\2\2tu\7\16\2"+
+		"\2uv\5\b\5\2vw\5\n\6\2wx\b\7\1\2xz\3\2\2\2yi\3\2\2\2yp\3\2\2\2z\r\3\2"+
+		"\2\2{|\7\21\2\2|}\t\5\2\2}~\5\b\5\2~\177\b\b\1\2\177\17\3\2\2\2\13\30"+
+		"\36&DS_agy";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

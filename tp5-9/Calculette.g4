@@ -5,9 +5,15 @@ grammar Calculette;
 }
 
 @members {
-    
-    private TablesSymboles tablesSymboles = new TablesSymboles();
 
+     private int _cur_label = 1;
+    /** générateur de nom d'étiquettes pour les boucles */
+    private String getNewLabel() { return "Label" +(_cur_label++); }
+
+    //Tables des symboles
+    private TablesSymboles tablesSymboles = new TablesSymboles();
+    
+    //Methode évaluant une expression
     private String evalexpr (String x, String op, String y) {
         if ( op.equals("*") ){
             return x+y+"MUL\n";
@@ -113,11 +119,16 @@ decl returns [ String code ]
     ; 
 
 assignation returns [ String code ] 
-    : IDENTIFIANT '=' expression
+    : IDENTIFIANT op=('=' |'+=') expression
         {  
             AdresseType at = tablesSymboles.getAdresseType($IDENTIFIANT.text);
             int adresse = at.adresse;
-            $code = $expression.code + "STOREG " + adresse +"\n";
+            if($op.text.equals("=")){    
+                $code = $expression.code + "STOREG " + adresse +"\n";
+            }
+            if($op.text.equals("+=")){
+                $code= $expression.code + "PUSHG " +adresse +"\n"+"ADD\n"+"STOREG " +adresse +"\n";
+             }
         }
     ;
 
@@ -139,8 +150,9 @@ FLOAT
 fragment
 EXPONENT : ('e'|'E') ('+'|'-')? ('0'..'9')+ ;
 
-NEWLINE : ('#' ~('\n'|'\r')*)? '\r'? '\n' ; // and Comment
+NEWLINE : ('#' ~('\n'|'\r')*)? '\r'? '\n' ; 
 
+// Skip les commentaires
 COMMENTARY
     :   (COMMENTAIRE | COMMENTAIREETOILE) ->skip
     ;
