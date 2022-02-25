@@ -142,11 +142,11 @@ EXPONENT : ('e'|'E') ('+'|'-')? ('0'..'9')+ ;
 NEWLINE : ('#' ~('\n'|'\r')*)? '\r'? '\n' ; // and Comment
 
 COMMENTARY
-    :   (COMMENTAIRE | COMMENTAIREETOILE)
+    :   (COMMENTAIRE | COMMENTAIREETOILE) ->skip
     ;
 
     fragment  
-    COMMENTAIRE : ('%') ~('\n')* ('\n');   // COmmence par % suivis de rien ou tous les caractères sauf le \n et termine par un \n
+    COMMENTAIRE : ('%') ~('\n')*;   // COmmence par % suivis de rien ou tous les caractères sauf le \n
 
     fragment  
     COMMENTAIREETOILE : ('/*') (.)*? ('*/');
