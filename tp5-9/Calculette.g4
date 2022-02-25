@@ -56,7 +56,17 @@ instruction returns [ String code ]
         { 
             $code=$assignation.code;
         }
-    | 'write' '(' expression ')'{ $code=$expression.code; $code+="WRITE\nPOP\n";}
+    | 'read' '(' IDENTIFIANT ')' finInstruction 
+        {
+            $code="READ\n";
+            AdresseType at = tablesSymboles.getAdresseType($IDENTIFIANT.text);
+            int adresse = at.adresse;
+            $code+="STOREG " +adresse+"\n";
+        }
+    | 'write' '(' expression ')' finInstruction
+        { 
+            $code=$expression.code + "WRITE\nPOP\n";
+        }
     | finInstruction
         {
             $code="";
@@ -69,6 +79,11 @@ expression returns [ String code ]
     | a=expression op=('+' | '-') b=expression {$code = evalexpr($a.code,$op.text,$b.code);}
     | ENTIER {$code= "PUSHI " + $ENTIER.text +"\n";} 
     | '-' ENTIER {$code="PUSHI -" + $ENTIER.text +"\n";}
+    | IDENTIFIANT { 
+                AdresseType at = tablesSymboles.getAdresseType($IDENTIFIANT.text);
+                int adresse = at.adresse;
+                $code = "PUSHG " +adresse+"\n";
+            }
     ;
 
 finInstruction : ( NEWLINE | ';' )+ ;
@@ -102,7 +117,7 @@ assignation returns [ String code ]
         {  
             AdresseType at = tablesSymboles.getAdresseType($IDENTIFIANT.text);
             int adresse = at.adresse;
-            $code = $expression.code + "\n" + "STOREG " + adresse +"\n";
+            $code = $expression.code + "STOREG " + adresse +"\n";
         }
     ;
 
@@ -135,6 +150,8 @@ COMMENTARY
 
     fragment  
     COMMENTAIREETOILE : ('/*') (.)*? ('*/');
+
+OPERATION : '*' | '+' | '-' | '/';
 
 UNMATCH 
     : .->skip

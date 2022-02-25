@@ -1,0 +1,2 @@
+Partie A,B,C effectuées. Cependant le support des commentaires au sein du langage n'est pas encore intégré,
+également les affectations d'une variable incluant une autre variable au sein d'une opération.
