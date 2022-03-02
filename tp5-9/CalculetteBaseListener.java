@@ -97,6 +97,42 @@ public class CalculetteBaseListener implements CalculetteListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitAssignation(CalculetteParser.AssignationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterCondition(CalculetteParser.ConditionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitCondition(CalculetteParser.ConditionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBloc(CalculetteParser.BlocContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBloc(CalculetteParser.BlocContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBoucle(CalculetteParser.BoucleContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBoucle(CalculetteParser.BoucleContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

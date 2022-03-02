@@ -79,4 +79,34 @@ public interface CalculetteListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitAssignation(CalculetteParser.AssignationContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CalculetteParser#condition}.
+	 * @param ctx the parse tree
+	 */
+	void enterCondition(CalculetteParser.ConditionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CalculetteParser#condition}.
+	 * @param ctx the parse tree
+	 */
+	void exitCondition(CalculetteParser.ConditionContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CalculetteParser#bloc}.
+	 * @param ctx the parse tree
+	 */
+	void enterBloc(CalculetteParser.BlocContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CalculetteParser#bloc}.
+	 * @param ctx the parse tree
+	 */
+	void exitBloc(CalculetteParser.BlocContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CalculetteParser#boucle}.
+	 * @param ctx the parse tree
+	 */
+	void enterBoucle(CalculetteParser.BoucleContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CalculetteParser#boucle}.
+	 * @param ctx the parse tree
+	 */
+	void exitBoucle(CalculetteParser.BoucleContext ctx);
 }

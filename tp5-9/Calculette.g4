@@ -32,6 +32,28 @@ grammar Calculette;
            throw new IllegalArgumentException("Opérateur arithmétique incorrect : '"+op+"'");
         }
     }
+
+    private String evalCondition(String condition){
+        switch(condition){
+            case "<=":
+                return "INFEQ";
+            case ">=":
+                return "SUPEQ";
+            case "<":
+                return "INF";
+            case ">":
+                return "SUP";
+            case "==":
+                return "EQUAL";
+            case "!=":
+                return "NEQ";
+            case "<>":
+                return "NEQ";
+            default:
+                return "";
+        }
+       
+    }
 }
 
 
@@ -73,6 +95,10 @@ instruction returns [ String code ]
         { 
             $code=$expression.code + "WRITE\nPOP\n";
         }
+    | boucle
+        {
+            $code=$boucle.code;
+        }
     | finInstruction
         {
             $code="";
@@ -112,7 +138,7 @@ decl returns [ String code ]
         {
             if($TYPE.text.equals("int")){
                 tablesSymboles.putVar($IDENTIFIANT.text,"int");
-                $code=$expression.code +"\n";
+                $code=$expression.code;
             }
         
         }
@@ -131,11 +157,49 @@ assignation returns [ String code ]
              }
         }
     ;
+condition returns [String code]
+    : 'true'  { $code = "  PUSHI 1\n"; }
+    | 'false' { $code = "  PUSHI 0\n"; }
+    | a=expression CONDITION b=expression
+        {
+            $code=$a.code;
+            $code+=$b.code;
+            $code+=evalCondition($CONDITION.text)+"\n";
+        }
+    ;
+bloc returns [String code ]
+@init{ $code = new String();}
+    : '{' (instruction{ $code+=$instruction.code;})* '}'
+           
+    ;
+boucle returns [ String code ]
+    : 'while' '(' condition ')' 
+        {
+            //Générer deux labels un pour le debut et un pour la fin
+            String labelDebut = getNewLabel();
+            String labelFin=getNewLabel();
+
+            //Label debut 
+            $code="LABEL " + labelDebut+"\n";
+            $code+=$condition.code;
+            //Condition du jump selon 1 ou 0 dans la pile
+            $code+="JUMPF "+ labelFin+"\n";
+        } 
+        //Peut etre suivis d'un bloc ou d'une instruction
+        (bloc {$code+= $bloc.code;} | instruction {$code+=$instruction.code;})
+        {
+            $code+="JUMP " +labelDebut+"\n";
+            $code+="LABEL "+labelFin+"\n";
+        }
+
+    ;
 
 // lexer
 TYPE : 'int' | 'double' ;
 
 IDENTIFIANT : ('a'..'z' | 'A'..'Z' | '_')('a'..'z' | 'A'..'Z' | '_' | '0'..'9')*;
+
+CONDITION : ('!=' | '<>' | '<' |'>' | '<=' |'>=');
 
 WS :   (' '|'\t')+  -> skip;
 
@@ -150,7 +214,7 @@ FLOAT
 fragment
 EXPONENT : ('e'|'E') ('+'|'-')? ('0'..'9')+ ;
 
-NEWLINE : ('#' ~('\n'|'\r')*)? '\r'? '\n' ; 
+NEWLINE : '\r'? '\n';
 
 // Skip les commentaires
 COMMENTARY
