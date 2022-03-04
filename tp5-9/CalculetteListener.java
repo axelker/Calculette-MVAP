@@ -109,4 +109,14 @@ public interface CalculetteListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitBoucle(CalculetteParser.BoucleContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CalculetteParser#si}.
+	 * @param ctx the parse tree
+	 */
+	void enterSi(CalculetteParser.SiContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CalculetteParser#si}.
+	 * @param ctx the parse tree
+	 */
+	void exitSi(CalculetteParser.SiContext ctx);
 }

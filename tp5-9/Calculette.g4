@@ -32,7 +32,7 @@ grammar Calculette;
            throw new IllegalArgumentException("Opérateur arithmétique incorrect : '"+op+"'");
         }
     }
-
+    //Evalue une condition op
     private String evalCondition(String condition){
         switch(condition){
             case "<=":
@@ -54,6 +54,24 @@ grammar Calculette;
         }
        
     }
+    //Evalue un boolean
+    private String evalBOOL(String bool){
+        if(bool.equals("true")){
+            return "PUSHI 1\n";
+        }
+        return "PUSHI 0\n";
+
+    }
+    //Evalu le && et ou logique
+    private String evalOPLOGIQUE(String c1,String op,String c2){
+        //MULTIPLIER LES DEUX RESULTATS DE CONDITIONS DANS LA PILE 
+        if(op.equals("&&")){
+            return "" + c1 + c2 + "MUL\n";
+        }
+        //POUR LE OU additionner les deux resultats de condition dans la pile
+        return "" + c1 + c2 +"ADD\n";
+    }
+
 }
 
 
@@ -98,6 +116,14 @@ instruction returns [ String code ]
     | boucle
         {
             $code=$boucle.code;
+        }
+    | si
+    {
+        $code=$si.code; 
+    }
+    | bloc
+        {
+            $code=$bloc.code;
         }
     | finInstruction
         {
@@ -157,49 +183,99 @@ assignation returns [ String code ]
              }
         }
     ;
+
 condition returns [String code]
-    : 'true'  { $code = "  PUSHI 1\n"; }
-    | 'false' { $code = "  PUSHI 0\n"; }
+    : NEGLOGIQUE condition {$code=$condition.code + "PUSHI 0\n" + "EQUAL\n";}
     | a=expression CONDITION b=expression
         {
             $code=$a.code;
             $code+=$b.code;
             $code+=evalCondition($CONDITION.text)+"\n";
         }
+    | c1=condition OPLOGIQUE c2=condition
+        {
+            $code=evalOPLOGIQUE($c1.code,$OPLOGIQUE.text,$c2.code);
+        }
+    | BOOL { $code = evalBOOL($BOOL.text);}
     ;
+
 bloc returns [String code ]
 @init{ $code = new String();}
-    : '{' (instruction{ $code+=$instruction.code;})* '}'
+//Concatenner les suites d'instructions
+    : '{' (instruction{ $code+=$instruction.code;})* '}' NEWLINE*
            
     ;
 boucle returns [ String code ]
-    : 'while' '(' condition ')' 
+@init { $code = new String(); 
+        //Générer deux labels un pour le debut et un pour la fin
+        String labelDebut = getNewLabel();
+        String labelFin=getNewLabel();
+    }
+    : 'while' '(' condition ')' instruction
         {
-            //Générer deux labels un pour le debut et un pour la fin
-            String labelDebut = getNewLabel();
-            String labelFin=getNewLabel();
-
+            
             //Label debut 
             $code="LABEL " + labelDebut+"\n";
             $code+=$condition.code;
             //Condition du jump selon 1 ou 0 dans la pile
             $code+="JUMPF "+ labelFin+"\n";
-        } 
-        //Peut etre suivis d'un bloc ou d'une instruction
-        (bloc {$code+= $bloc.code;} | instruction {$code+=$instruction.code;})
-        {
+            $code+=$instruction.code;
             $code+="JUMP " +labelDebut+"\n";
             $code+="LABEL "+labelFin+"\n";
+
+        } 
+    | 'for' '(' init=assignation ';' condition ';' incr=assignation ')' instruction
+    {
+            $code=$init.code;
+            $code+="LABEL " + labelDebut+"\n";
+            $code+=$condition.code;
+            $code+="JUMPF "+ labelFin+"\n";
+            $code+=$instruction.code;
+            $code+=$incr.code;
+            $code+="JUMP " +labelDebut+"\n";
+            $code+="LABEL "+labelFin+"\n";
+
+    }
+    | 'repeat' instruction 'until' '(' condition ')'
+    {
+        $code+="LABEL " + labelDebut+"\n";
+        $code+=$instruction.code;
+        $code+=$condition.code;
+        $code+="JUMPF "+ labelDebut+"\n";
+        $code+="LABEL "+labelFin+"\n";
+
+    }
+
+    ;
+si returns [ String code ]
+@init{
+        $code = new String();
+        String labelElse = getNewLabel();
+        String labelFin=getNewLabel();
+    }
+    :   'if' '(' condition ')' i=instruction
+        {
+            
+            $code+=$condition.code;
+            $code+="JUMPF "+ labelElse+"\n";
+            $code+=$i.code;
+            $code+="JUMP " + labelFin +"\n";
+            $code+="LABEL "+labelElse+"\n";
         }
+        ('else' e=instruction
+        {
+            $code+=$e.code;
+        })?
+        {$code+="LABEL " +labelFin +"\n";}
 
     ;
 
 // lexer
 TYPE : 'int' | 'double' ;
-
+BOOL : 'true' | 'false';
 IDENTIFIANT : ('a'..'z' | 'A'..'Z' | '_')('a'..'z' | 'A'..'Z' | '_' | '0'..'9')*;
 
-CONDITION : ('!=' | '<>' | '<' |'>' | '<=' |'>=');
+CONDITION : ('!=' | '<>' | '<' |'>' | '<=' |'>=' |'==');
 
 WS :   (' '|'\t')+  -> skip;
 
@@ -227,7 +303,13 @@ COMMENTARY
     fragment  
     COMMENTAIREETOILE : ('/*') (.)*? ('*/');
 
+
+
 OPERATION : '*' | '+' | '-' | '/';
+
+OPLOGIQUE : '&&' | '||';
+
+NEGLOGIQUE : '!';
 
 UNMATCH 
     : .->skip
