@@ -14,23 +14,40 @@ grammar Calculette;
     private TablesSymboles tablesSymboles = new TablesSymboles();
     
     //Methode évaluant une expression
-    private String evalexpr (String x, String op, String y) {
-        if ( op.equals("*") ){
-            return x+y+"MUL\n";
+    private String evalexpr (String x, String op, String y,String xtype,String ytype) {
+        if(xtype.equals("int") && ytype.equals("int")){
+            if ( op.equals("*") ){
+                return x+y+"MUL\n";
+            }
+            if ( op.equals("+") ){
+                return x+y+"ADD\n";
+            } 
+            if ( op.equals("/") ){
+                return x+y+"DIV\n";
+            }
+            if ( op.equals("-") ){
+                return x+y+"SUB\n";
+            }
         }
-        if ( op.equals("+") ){
-            return x+y+"ADD\n";
-        } 
-        if ( op.equals("/") ){
-            return x+y+"DIV\n";
+        if(xtype.equals("double") && ytype.equals("double")){
+             if ( op.equals("*") ){
+                return x+y+"FMUL\n";
+            }
+            if ( op.equals("+") ){
+                return x+y+"FADD\n";
+            } 
+            if ( op.equals("/") ){
+                return x+y+"FDIV\n";
+            }
+            if ( op.equals("-") ){
+                return x+y+"FSUB\n";
+            }
         }
-        if ( op.equals("-") ){
-            return x+y+"SUB\n";
-        }
-        else {
-           System.err.println("Opérateur arithmétique incorrect : '"+op+"'");
-           throw new IllegalArgumentException("Opérateur arithmétique incorrect : '"+op+"'");
-        }
+
+        
+           throw new IllegalArgumentException("ERREUR ENTRE LES TYPES ");
+        
+       
     }
     //Evalue une condition op
     private String evalCondition(String condition){
@@ -84,13 +101,17 @@ calcul returns [ String code ]
 @init{ $code = new String(); }   // On initialise code, pour ensuite l'utiliser comme accumulateur
 @after{ System.out.println($code); } // Affiche contenu pile
     : 
-        (decl { $code += $decl.code; })*
-
+        (decl { $code += $decl.code; })*        
+        { $code += "  JUMP Main\n"; }
         NEWLINE*
-
+        
+        (fonction { $code += $fonction.code; })* 
+        NEWLINE*
+        
+        { $code += "LABEL Main\n"; }
         (instruction { $code += $instruction.code; })*
 
-        { $code += "HALT\n"; }
+        { $code += "  HALT\n"; } 
     ;
 
 instruction returns [ String code ] 
@@ -102,16 +123,30 @@ instruction returns [ String code ]
         { 
             $code=$assignation.code;
         }
-    | 'read' '(' IDENTIFIANT ')' finInstruction 
+    | READ '(' IDENTIFIANT ')' finInstruction 
         {
-            $code="READ\n";
             AdresseType at = tablesSymboles.getAdresseType($IDENTIFIANT.text);
             int adresse = at.adresse;
-            $code+="STOREG " +adresse+"\n";
+            String type = at.type;
+
+            if(type.equals("int")){
+                $code="READ\n";
+                $code+="STOREG " +adresse+"\n";
+            }
+             if(type.equals("double")){
+                $code="READF\n";
+                 $code+="STOREG " +(adresse+1)+"\n";
+                $code+="STOREG " +adresse+"\n";
+             }
         }
-    | 'write' '(' expression ')' finInstruction
+    | WRITE '(' expression ')' finInstruction
         { 
-            $code=$expression.code + "WRITE\nPOP\n";
+            if($expression.type.equals("int")){
+                $code=$expression.code + "WRITE\nPOP\n";
+            }
+            if($expression.type.equals("double")){
+                $code=$expression.code + "WRITEF\nPOP\nPOP\n";
+            }
         }
     | boucle
         {
@@ -125,23 +160,76 @@ instruction returns [ String code ]
         {
             $code=$bloc.code;
         }
+    | fonction
+    {
+        $code=$fonction.code;
+    }
+    | RETURN expression 
+    {
+        $code=$expression.code;
+        AdresseType at = tablesSymboles.getAdresseType("return");
+        int adresse = at.adresse;
+        AdresseType atdouble = tablesSymboles.getAdresseType("returndouble");
+
+        if(atdouble!=null){
+            $code+="STOREL "+ (atdouble.adresse+1) + "\n";
+            $code+="STOREL "+atdouble.adresse+"\n";
+        }
+        else{ 
+        $code+="STOREL "+adresse+"\n";
+        }
+        $code+="RETURN \n";
+    }
     | finInstruction
         {
             $code="";
         }
     ;
 
-expression returns [ String code ]
-    : '(' a=expression ')' {$code = $a.code;}
-    | a=expression op=('/' | '*') b=expression {$code = evalexpr($a.code,$op.text,$b.code);}
-    | a=expression op=('+' | '-') b=expression {$code = evalexpr($a.code,$op.text,$b.code);}
-    | ENTIER {$code= "PUSHI " + $ENTIER.text +"\n";} 
-    | '-' ENTIER {$code="PUSHI -" + $ENTIER.text +"\n";}
+expression returns [ String code, String type ]
+    : '(' a=expression ')' {$code = $a.code; $type=$a.type;}
+    | a=expression op=('/' | '*') b=expression {$code = evalexpr($a.code,$op.text,$b.code,$a.type,$b.type); $type=$a.type;}
+    | a=expression op=('+' | '-') b=expression {$code = evalexpr($a.code,$op.text,$b.code,$a.type,$b.type); $type=$a.type;}
+    | ENTIER {$code= "PUSHI " + $ENTIER.text +"\n"; $type="int";} 
+    | '-' ENTIER {$code="PUSHI -" + $ENTIER.text +"\n"; $type="int";}
+    | FLOAT {$code="PUSHF "+$FLOAT.text +"\n"; $type="double";}
+    | '-' FLOAT {$code="PUSHF -"+$FLOAT.text +"\n"; $type="double";}
+    | IDENTIFIANT '(' args ')'                  // appel de fonction  
+        {  
+            //Recuperer type de la fonction
+            String type = tablesSymboles.getFunction($IDENTIFIANT.text);
+            $type=type;
+
+            $code="PUSHI 0\n"; // Reserver l'espce pour un int 
+            $code+=$args.code;
+            $code+="CALL "+$IDENTIFIANT.text+"\n";
+            int tailleArgument = $args.size;
+            while(tailleArgument!=0){
+                $code+="POP \n";
+                tailleArgument--;
+            }
+        }
+
     | IDENTIFIANT { 
                 AdresseType at = tablesSymboles.getAdresseType($IDENTIFIANT.text);
                 int adresse = at.adresse;
-                $code = "PUSHG " +adresse+"\n";
+                String type = at.type;
+                $type=type;
+
+                if(adresse>=0){
+                    if(type.equals("int")){
+                        $code = "PUSHG " +adresse+"\n";
+                    }
+                    if(type.equals("double")){
+                         $code = "PUSHG " +adresse+"\n";
+                         $code+= "PUSHG "+(adresse+1)+"\n";
+                    }
+                }
+                else {
+                     $code = "PUSHL " +adresse+"\n";
+                }
             }
+    
     ;
 
 finInstruction : ( NEWLINE | ';' )+ ;
@@ -166,6 +254,10 @@ decl returns [ String code ]
                 tablesSymboles.putVar($IDENTIFIANT.text,"int");
                 $code=$expression.code;
             }
+            if($TYPE.text.equals("double")){
+                tablesSymboles.putVar($IDENTIFIANT.text,"double");
+                $code=$expression.code;
+            }
         
         }
     ; 
@@ -175,12 +267,32 @@ assignation returns [ String code ]
         {  
             AdresseType at = tablesSymboles.getAdresseType($IDENTIFIANT.text);
             int adresse = at.adresse;
+            String type = at.type;
+            $code = $expression.code;
+
             if($op.text.equals("=")){    
-                $code = $expression.code + "STOREG " + adresse +"\n";
+                if(adresse>=0){
+                    if(type.equals("int")){
+                        $code+="STOREG " + adresse +"\n";
+                    }
+                    if(type.equals("double")){
+                        $code += "STOREG " + (adresse+1) +"\n";
+                        $code += "STOREG " + adresse +"\n";
+                    }
+                }
+                else {
+                    $code += "STOREL " + adresse +"\n";
+                }
             }
             if($op.text.equals("+=")){
-                $code= $expression.code + "PUSHG " +adresse +"\n"+"ADD\n"+"STOREG " +adresse +"\n";
+                if(adresse>=0){
+                    $code+=  "PUSHG " +adresse +"\n"+"ADD\n"+"STOREG " +adresse +"\n";
+                }
+                else {
+                    $code+="PUSHL " +adresse +"\n"+"ADD\n"+"STOREL " +adresse +"\n";
+                }
              }
+
         }
     ;
 
@@ -269,10 +381,69 @@ si returns [ String code ]
         {$code+="LABEL " +labelFin +"\n";}
 
     ;
+fonction returns [ String code ]
+@init{ tablesSymboles.newTableLocale(); 
+        $code=new String();
+        } // instancier la table locale
+@after{ tablesSymboles.dropTableLocale(); } // détruire la table locale
+    : 'fun' IDENTIFIANT ':' TYPE 
+    
+        {
+            $code+="LABEL "+$IDENTIFIANT.text+"\n";
+            //truc à faire par rapport au "type" de la fonction et code pour la "variable" de retour 
+            tablesSymboles.newFunction($IDENTIFIANT.text,$TYPE.text);  
+            tablesSymboles.putVar("return",$TYPE.text); 
+
+            if($TYPE.text.equals("double")){
+                tablesSymboles.putVar("returndouble",$TYPE.text); 
+            }   
+	    }
+        '('  params ? ')' bloc 
+        {
+            $code+=$bloc.code;
+            $code+="RETURN\n";
+        }
+    ;
+params
+    : TYPE IDENTIFIANT 
+        { 
+            // code java gérant une variable locale (arg0)
+            tablesSymboles.putVar($IDENTIFIANT.text,$TYPE.text);
+            
+        }  
+        ( ',' TYPE IDENTIFIANT 
+            { 
+                // code java gérant une variable locale (argi)
+                tablesSymboles.putVar($IDENTIFIANT.text,$TYPE.text);
+            } 
+        )*
+    ;
+
+ // init nécessaire à cause du ? final et donc args peut être vide (mais $args sera non null) 
+args returns [ String code, int size] @init{ $code = new String(); $size = 0; }
+    : ( expression
+    { 
+        // code java pour première expression pour arg
+        $code+=$expression.code;
+        $size+=1;
+    }
+    ( ',' expression
+    { 
+        // code java pour expression suivante pour arg
+         $code+=$expression.code;
+         $size+=1;
+    } 
+    )* 
+      )? 
+    ;
 
 // lexer
 TYPE : 'int' | 'double' ;
 BOOL : 'true' | 'false';
+RETURN: 'return';
+READ : 'read';
+WRITE :'write';
+
 IDENTIFIANT : ('a'..'z' | 'A'..'Z' | '_')('a'..'z' | 'A'..'Z' | '_' | '0'..'9')*;
 
 CONDITION : ('!=' | '<>' | '<' |'>' | '<=' |'>=' |'==');
