@@ -176,7 +176,7 @@ instruction returns [ String code ]
             $code+="STOREL "+atdouble.adresse+"\n";
         }
         else{ 
-        $code+="STOREL "+adresse+"\n";
+            $code+="STOREL "+adresse+"\n";
         }
         $code+="RETURN \n";
     }
@@ -199,8 +199,12 @@ expression returns [ String code, String type ]
             //Recuperer type de la fonction
             String type = tablesSymboles.getFunction($IDENTIFIANT.text);
             $type=type;
-
-            $code="PUSHI 0\n"; // Reserver l'espce pour un int 
+            if(type.equals("int")){
+                $code="PUSHI 0\n"; // Reserver l'espce pour un int 
+            }
+           if(type.equals("double")){
+              $code="PUSHF 0.0\n"; // Reserver l'espce pour un float
+            }
             $code+=$args.code;
             $code+="CALL "+$IDENTIFIANT.text+"\n";
             int tailleArgument = $args.size;
@@ -226,7 +230,13 @@ expression returns [ String code, String type ]
                     }
                 }
                 else {
-                     $code = "PUSHL " +adresse+"\n";
+                    if(type.equals("int")){
+                        $code = "PUSHL " +adresse+"\n";
+                    }
+                    if(type.equals("double")){
+                        $code="PUSHL " + adresse +"\n";
+                        $code+="PUSHL " + (adresse+1) +"\n";
+                    }
                 }
             }
     
@@ -281,15 +291,40 @@ assignation returns [ String code ]
                     }
                 }
                 else {
-                    $code += "STOREL " + adresse +"\n";
+                    if(type.equals("int")){
+                        $code += "STOREL " + adresse +"\n";
+                    }
+                     if(type.equals("double")){
+                        $code+="STOREL " +(adresse+1) +"\n";
+                        $code+="STOREL " +adresse +"\n";
+                     }
                 }
             }
             if($op.text.equals("+=")){
                 if(adresse>=0){
-                    $code+=  "PUSHG " +adresse +"\n"+"ADD\n"+"STOREG " +adresse +"\n";
+                    if(type.equals("int")){
+                        $code+=  "PUSHG " +adresse +"\n"+"ADD\n"+"STOREG " +adresse +"\n";
+                    }
+                    if(type.equals("double")){
+                        $code+= "PUSHG " +adresse+"\n";
+                        $code+= "PUSHG "+(adresse+1)+"\n";
+                        $code+= "FADD\n";
+                        $code += "STOREG " + (adresse+1) +"\n";
+                        $code += "STOREG " + adresse +"\n";
+                     }
                 }
                 else {
-                    $code+="PUSHL " +adresse +"\n"+"ADD\n"+"STOREL " +adresse +"\n";
+                    if(type.equals("int")){
+                        $code+="PUSHL " +adresse +"\n"+"ADD\n"+"STOREL " +adresse +"\n";
+                    }
+                    if(type.equals("double")){
+                        $code+="PUSHL " + adresse +"\n";
+                        $code+="PUSHL " + (adresse+1) +"\n";
+                        $code+="FADD\n";
+                        $code+="STOREL " +(adresse+1) +"\n";
+                        $code+="STOREL " +adresse +"\n";
+
+                    }
                 }
              }
 
@@ -425,13 +460,25 @@ args returns [ String code, int size] @init{ $code = new String(); $size = 0; }
     { 
         // code java pour première expression pour arg
         $code+=$expression.code;
-        $size+=1;
+        //1 arg int prends une place dans la pile
+        if($expression.type.equals("int")){
+            $size+=1;
+        }
+        //1 arg double prend deux places dans la pile
+        if($expression.type.equals("double")){
+            $size+=2;
+        }
     }
     ( ',' expression
     { 
         // code java pour expression suivante pour arg
          $code+=$expression.code;
-         $size+=1;
+         if($expression.type.equals("int")){
+            $size+=1;
+        }
+        if($expression.type.equals("double")){
+            $size+=2;
+        }
     } 
     )* 
       )? 

@@ -572,7 +572,7 @@ public class CalculetteParser extends Parser {
 				            _localctx.code+="STOREL "+atdouble.adresse+"\n";
 				        }
 				        else{ 
-				        _localctx.code+="STOREL "+adresse+"\n";
+				            _localctx.code+="STOREL "+adresse+"\n";
 				        }
 				        _localctx.code+="RETURN \n";
 				    
@@ -713,8 +713,12 @@ public class CalculetteParser extends Parser {
 				            //Recuperer type de la fonction
 				            String type = tablesSymboles.getFunction((((ExpressionContext)_localctx).IDENTIFIANT!=null?((ExpressionContext)_localctx).IDENTIFIANT.getText():null));
 				            ((ExpressionContext)_localctx).type = type;
-
-				            ((ExpressionContext)_localctx).code = "PUSHI 0\n"; // Reserver l'espce pour un int 
+				            if(type.equals("int")){
+				                ((ExpressionContext)_localctx).code = "PUSHI 0\n"; // Reserver l'espce pour un int 
+				            }
+				           if(type.equals("double")){
+				              ((ExpressionContext)_localctx).code = "PUSHF 0.0\n"; // Reserver l'espce pour un float
+				            }
 				            _localctx.code+=((ExpressionContext)_localctx).args.code;
 				            _localctx.code+="CALL "+(((ExpressionContext)_localctx).IDENTIFIANT!=null?((ExpressionContext)_localctx).IDENTIFIANT.getText():null)+"\n";
 				            int tailleArgument = ((ExpressionContext)_localctx).args.size;
@@ -745,7 +749,13 @@ public class CalculetteParser extends Parser {
 				                    }
 				                }
 				                else {
-				                     ((ExpressionContext)_localctx).code =  "PUSHL " +adresse+"\n";
+				                    if(type.equals("int")){
+				                        ((ExpressionContext)_localctx).code =  "PUSHL " +adresse+"\n";
+				                    }
+				                    if(type.equals("double")){
+				                        ((ExpressionContext)_localctx).code = "PUSHL " + adresse +"\n";
+				                        _localctx.code+="PUSHL " + (adresse+1) +"\n";
+				                    }
 				                }
 				            
 				}
@@ -1063,15 +1073,40 @@ public class CalculetteParser extends Parser {
 			                    }
 			                }
 			                else {
-			                    _localctx.code += "STOREL " + adresse +"\n";
+			                    if(type.equals("int")){
+			                        _localctx.code += "STOREL " + adresse +"\n";
+			                    }
+			                     if(type.equals("double")){
+			                        _localctx.code+="STOREL " +(adresse+1) +"\n";
+			                        _localctx.code+="STOREL " +adresse +"\n";
+			                     }
 			                }
 			            }
 			            if((((AssignationContext)_localctx).op!=null?((AssignationContext)_localctx).op.getText():null).equals("+=")){
 			                if(adresse>=0){
-			                    _localctx.code+=  "PUSHG " +adresse +"\n"+"ADD\n"+"STOREG " +adresse +"\n";
+			                    if(type.equals("int")){
+			                        _localctx.code+=  "PUSHG " +adresse +"\n"+"ADD\n"+"STOREG " +adresse +"\n";
+			                    }
+			                    if(type.equals("double")){
+			                        _localctx.code+= "PUSHG " +adresse+"\n";
+			                        _localctx.code+= "PUSHG "+(adresse+1)+"\n";
+			                        _localctx.code+= "FADD\n";
+			                        _localctx.code += "STOREG " + (adresse+1) +"\n";
+			                        _localctx.code += "STOREG " + adresse +"\n";
+			                     }
 			                }
 			                else {
-			                    _localctx.code+="PUSHL " +adresse +"\n"+"ADD\n"+"STOREL " +adresse +"\n";
+			                    if(type.equals("int")){
+			                        _localctx.code+="PUSHL " +adresse +"\n"+"ADD\n"+"STOREL " +adresse +"\n";
+			                    }
+			                    if(type.equals("double")){
+			                        _localctx.code+="PUSHL " + adresse +"\n";
+			                        _localctx.code+="PUSHL " + (adresse+1) +"\n";
+			                        _localctx.code+="FADD\n";
+			                        _localctx.code+="STOREL " +(adresse+1) +"\n";
+			                        _localctx.code+="STOREL " +adresse +"\n";
+
+			                    }
 			                }
 			             }
 
@@ -1751,7 +1786,14 @@ public class CalculetteParser extends Parser {
 				 
 				        // code java pour première expression pour arg
 				        _localctx.code+=((ArgsContext)_localctx).expression.code;
-				        _localctx.size+=1;
+				        //1 arg int prends une place dans la pile
+				        if(((ArgsContext)_localctx).expression.type.equals("int")){
+				            _localctx.size+=1;
+				        }
+				        //1 arg double prend deux places dans la pile
+				        if(((ArgsContext)_localctx).expression.type.equals("double")){
+				            _localctx.size+=2;
+				        }
 				    
 				setState(298);
 				_errHandler.sync(this);
@@ -1766,7 +1808,12 @@ public class CalculetteParser extends Parser {
 					 
 					        // code java pour expression suivante pour arg
 					         _localctx.code+=((ArgsContext)_localctx).expression.code;
-					         _localctx.size+=1;
+					         if(((ArgsContext)_localctx).expression.type.equals("int")){
+					            _localctx.size+=1;
+					        }
+					        if(((ArgsContext)_localctx).expression.type.equals("double")){
+					            _localctx.size+=2;
+					        }
 					    
 					}
 					}
